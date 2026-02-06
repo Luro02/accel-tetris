@@ -450,6 +450,8 @@ class Board {
         nextElement.color,
       );
     }
+
+    updateFavicon();
   }
 }
 
@@ -485,7 +487,7 @@ class Element {
   }
 }
 
-let board = new Board(ColorTheme.Neon);
+let board = new Board(ColorTheme.Default);
 
 let lastdx = 0;
 let lastdy = 0;
@@ -494,6 +496,22 @@ let dx = 0;
 let dtx = 500;
 let dy = 1;
 let dty = 500;
+
+function updateFavicon() {
+  // Convert the canvas to a data URL (PNG format)
+  const iconUrl = sideCanvas.toDataURL("image/png");
+
+  // Find or create the favicon link element
+  let link = document.querySelector("link[rel~='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+
+  // Set the canvas data as the favicon source
+  link.href = iconUrl;
+}
 
 /// The main loop that is called to render the game:
 function draw(timestamp) {

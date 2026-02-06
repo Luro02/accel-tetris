@@ -48,6 +48,11 @@ class Board {
     sideCanvas.style.background = theme.sidebarBackground;
     document.getElementById("side-bar").style.background =
       this.theme.sidebarBackground;
+
+    for (const element of document.getElementsByTagName("button")) {
+      element.style.background = theme.sidebarBackground;
+      element.style.color = theme.textColor;
+    }
   }
 
   switchTheme() {
@@ -177,7 +182,7 @@ class Board {
   }
 
   /// Moves the element by dx and dy.
-  moveElement(dx, dy) {
+  moveElement(dx, dy, isSoftDrop = false) {
     // If there is nothing to move or no movement requested, there is nothing to do here
     if (this.element == null || (dx === 0 && dy === 0)) {
       return;
@@ -239,6 +244,10 @@ class Board {
     console.log(
       `Moved element to (${this.element.x}, ${this.element.y}), should be at (${this.element.x + dx}, ${this.element.y + dy})`,
     );
+
+    if (isSoftDrop && dy > 0) {
+      this.score += 1;
+    }
   }
 
   clearLines() {
@@ -532,7 +541,7 @@ function draw(timestamp) {
   }
 
   if (isEnabled) {
-    board.moveElement(moveX, moveY);
+    board.moveElement(moveX, moveY, dty < 1000);
   }
   board.render();
   requestAnimationFrame(draw);
@@ -540,49 +549,62 @@ function draw(timestamp) {
 
 requestAnimationFrame(draw);
 
-var lastUpdate = 0;
-if (DeviceOrientationEvent) {
-  window.addEventListener(
-    "deviceorientation",
-    function (event) {
-      event.preventDefault();
-      if (event.timeStamp - lastUpdate < 250) {
-        return;
-      }
+function handleOrientationEvent(event) {
+  event.preventDefault();
 
-      // Use gamma to move the piece left or right
-      if (Math.abs(event.gamma) < 15) {
-        dx = 0;
-        dtx = 1000;
+  // Use gamma to move the piece left or right
+  if (Math.abs(event.gamma) < 15) {
+    dx = 0;
+    dtx = 1000;
+  } else {
+    dx = event.gamma > 0 ? 1 : -1;
+
+    dtx = 1000 / Math.abs((event.gamma || 0) / 12);
+  }
+
+  if (dx != 0) {
+    dty = 1000; // slow down drop speed while moving
+  }
+
+  // only adjust drop speed if device is not moving left or right
+  if (event.beta != null && dx == 0) {
+    if (event.beta <= 20) {
+      dty = 1000;
+    } else if (event.beta <= 30) {
+      dty = 500;
+    } else if (event.beta <= 40) {
+      dty = 300;
+    } else {
+      dty = 100;
+    }
+  }
+}
+
+const tiltButton = document.getElementById("enable-tilt");
+if (
+  typeof DeviceOrientationEvent === "undefined" &&
+  typeof DeviceOrientationEvent.requestPermission === "function"
+) {
+  tiltButton.addEventListener("click", async () => {
+    try {
+      const permissionState = await DeviceOrientationEvent.requestPermission();
+      if (permissionState === "granted") {
+        setupOrientationListener();
+        tiltButton.style.visibility = "hidden";
       } else {
-        dx = event.gamma > 0 ? 1 : -1;
-
-        dtx = 1000 / Math.abs((event.gamma || 0) / 12);
+        alert("Permission denied. Tilt controls will not work.");
       }
-
-      if (dx != 0) {
-        dty = 1000; // slow down drop speed while moving
-      }
-
-      // only adjust drop speed if device is not moving left or right
-      if (event.beta != null && dx == 0) {
-        if (event.beta <= 20) {
-          dty = 1000;
-        } else if (event.beta <= 30) {
-          dty = 500;
-        } else if (event.beta <= 40) {
-          board.score += 2; // reward for manually moving down
-
-          dty = 300;
-        } else {
-          board.score += 3; // reward for manually moving down
-          dty = 100;
-        }
-      }
-    },
-    { passive: false },
-  );
+    } catch (error) {
+      console.error(error);
+    }
+  });
+} else if (DeviceOrientationEvent) {
+  tiltButton.style.visibility = "hidden";
+  window.addEventListener("deviceorientation", handleOrientationEvent, {
+    passive: false,
+  });
 } else {
+  tiltButton.style.visibility = "hidden";
   document.getElementById("info").innerText =
     "Device Orientation API not supported.";
 }
@@ -603,7 +625,6 @@ document.addEventListener("keydown", function (event) {
   }
 
   if (event.key === "ArrowDown") {
-    board.score += 1; // reward for manually moving down
-    board.moveElement(0, 1);
+    board.moveElement(0, 1, true);
   }
 });

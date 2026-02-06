@@ -8,7 +8,11 @@
   </head>
   <body>
     <!-- The CSS styles resize the canvas to fit the screen, but the resolution is defined here -->
-    <div id="info">Tilt your device or press ← → ↑ ↓ to play</div>
+    <div id="header">
+      <button id="enable-tilt">Enable Tilt Controls</button>
+      <div id="info">Tilt your device or press ← → ↑ ↓ to play</div>
+      <button id="toggle-audio">Toggle Audio</button>
+    </div>
     <div id="content">
       <div id="side-bar">
         <div class="side-item">
@@ -25,4 +29,5 @@
     </div>
   </body>
   <script src="render.js" type="module"></script>
+  <script src="audio.js" type="module"></script>
 </html>

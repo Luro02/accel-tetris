@@ -582,7 +582,7 @@ function handleOrientationEvent(event) {
 
 const tiltButton = document.getElementById("enable-tilt");
 if (
-  typeof DeviceOrientationEvent === "undefined" &&
+  typeof DeviceOrientationEvent !== "undefined" &&
   typeof DeviceOrientationEvent.requestPermission === "function"
 ) {
   tiltButton.addEventListener("click", async () => {

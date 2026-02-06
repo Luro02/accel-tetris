@@ -13,6 +13,16 @@ const cubeHeight = canvas.height / gridHeight;
 const canvasWidth = canvas.width;
 const canvasHeight = canvas.height;
 
+// This goes through all themes, all pieces and their layouts to find the largest piece size.
+//
+// This is later used to determine the padding for the preview of the next piece.
+const largestElementSize = ColorTheme.all
+  .flatMap((theme) => theme.pieces)
+  .map((piece) => piece.layout)
+  .flatMap((layout) => [layout.length, ...layout.map((row) => row.length)])
+  .reduce((a, b) => Math.max(a, b), 1);
+const previewPadding = 0.2; // in percent of the cube width/height
+
 const levelChangeThreshold = 1000;
 
 class Board {
@@ -368,12 +378,6 @@ class Board {
     sctx.fillStyle = this.theme.sidebarBackground;
     sctx.fillRect(0, 0, sideCanvasWidth, sideCanvasHeight);
 
-    console.log(
-      "Rendering side board with score:",
-      sideCanvasWidth,
-      sideCanvasHeight,
-    );
-
     document.getElementById("score-value").innerText = this.score;
 
     this.renderPreview();
@@ -381,19 +385,24 @@ class Board {
 
   renderPreview() {
     let nextElement = this.nextElement();
-    const previewSize = Math.min(sideCanvas.width / 6, sideCanvas.height / 6);
-    const startX = (sideCanvas.width - nextElement.maxWidth * previewSize) / 2;
+
+    const previewWidth =
+      (sideCanvas.width - 2 * previewPadding * cubeWidth) / largestElementSize;
+    const previewHeight =
+      (sideCanvas.height - 2 * previewPadding * cubeHeight) /
+      largestElementSize;
+    const startX = (sideCanvas.width - nextElement.maxWidth * previewWidth) / 2;
     const startY =
-      (sideCanvas.height - nextElement.maxHeight * previewSize) / 2;
+      (sideCanvas.height - nextElement.maxHeight * previewHeight) / 2;
 
     // And this will draw the next piece
     for (var coord of nextElement.coordinates()) {
       this.drawBlock(
         sctx,
-        startX + (coord.x - nextElement.x) * previewSize,
-        startY + (coord.y - nextElement.y) * previewSize,
-        previewSize,
-        previewSize,
+        startX + (coord.x - nextElement.x) * previewWidth,
+        startY + (coord.y - nextElement.y) * previewHeight,
+        previewWidth,
+        previewHeight,
         nextElement.color,
       );
     }

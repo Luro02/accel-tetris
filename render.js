@@ -589,7 +589,9 @@ if (
     try {
       const permissionState = await DeviceOrientationEvent.requestPermission();
       if (permissionState === "granted") {
-        setupOrientationListener();
+        window.addEventListener("deviceorientation", handleOrientationEvent, {
+          passive: false,
+        });
         tiltButton.style.visibility = "hidden";
       } else {
         alert("Permission denied. Tilt controls will not work.");

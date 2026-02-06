@@ -1,6 +1,7 @@
-// Source - https://stackoverflow.com/a/6445104
-// Posted by Sanghyun Lee, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-02-06, License - CC BY-SA 3.0
+// It seems like javascript does not have a built-in utilities for color manipulation,
+// so these functions do some of the conversions.
+//
+// Taken from https://stackoverflow.com/a/6445104
 
 /**
  * Converts an RGB color value to HSL. Conversion formula
@@ -79,12 +80,18 @@ function hslToRgb(h, s, l) {
   return [r * 255, g * 255, b * 255];
 }
 
-// Source - https://stackoverflow.com/a/6445104
-// Posted by Sanghyun Lee, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-02-06, License - CC BY-SA 3.0
-
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function toRGBHex(r, g, b, a = 1.0) {
+  return (
+    "#" +
+    convertToTwoDigitHexCodeFromDecimal(r) +
+    convertToTwoDigitHexCodeFromDecimal(g) +
+    convertToTwoDigitHexCodeFromDecimal(b) +
+    convertToTwoDigitHexCodeFromDecimal(a * 255)
+  );
 }
 
 export function adjustBrightnessBy(rgbcode, percent) {
@@ -97,12 +104,15 @@ export function adjustBrightnessBy(rgbcode, percent) {
 
   let RGB = hslToRgb(HSL[0], HSL[1], clamp(newBrightness, 0.0, 1.0));
 
-  return (
-    "#" +
-    convertToTwoDigitHexCodeFromDecimal(RGB[0]) +
-    convertToTwoDigitHexCodeFromDecimal(RGB[1]) +
-    convertToTwoDigitHexCodeFromDecimal(RGB[2])
-  );
+  return toRGBHex(RGB[0], RGB[1], RGB[2]);
+}
+
+export function colorWithAlpha(rgbcode, alpha) {
+  const r = parseInt(rgbcode.slice(1, 3), 16);
+  const g = parseInt(rgbcode.slice(3, 5), 16);
+  const b = parseInt(rgbcode.slice(5, 7), 16);
+
+  return toRGBHex(r, g, b, clamp(alpha, 0.0, 1.0));
 }
 
 function convertToTwoDigitHexCodeFromDecimal(decimal) {
@@ -110,14 +120,4 @@ function convertToTwoDigitHexCodeFromDecimal(decimal) {
 
   code.length > 1 || (code = "0" + code);
   return code;
-}
-
-export function isDark(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  // Perceptual brightness formula
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness < 128;
 }

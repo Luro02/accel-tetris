@@ -1,5 +1,5 @@
 import { ColorTheme } from "./themes.js";
-import { adjustBrightnessBy, isDark } from "./utils.js";
+import { adjustBrightnessBy, colorWithAlpha } from "./utils.js";
 
 const gridWidth = 10;
 const gridHeight = 20;
@@ -58,6 +58,12 @@ class Board {
     }
 
     this.applyTheme(theme);
+
+    // This updates the preview piece to the new theme
+    var currentElement = this.element;
+    this.nextElement();
+    this.element = currentElement;
+
     let score = this.score;
     let level = this.level;
     // Randomly reset the board, should reduce frustration
@@ -202,10 +208,13 @@ class Board {
       console.log("Element will collide when moved down, locking in place");
       // Lock the element in place
       for (let coord of this.element.coordinates()) {
-        this.grid[coord.y][coord.x] = this.element.color;
+        this.grid[coord.y][coord.x] = adjustBrightnessBy(
+          this.element.color,
+          -0.2,
+        );
       }
 
-      this.score += 10; // update score for successfully placing a piece
+      this.score += 20; // update score for successfully placing a piece
 
       this.element = null;
       this.clearLines();
@@ -218,6 +227,7 @@ class Board {
       // the game is over, because you can't move the new piece
       if (this.collides(0, 0)) {
         alert("Game Over!");
+        // Reset the game to start new game after game over
         this.reset();
       }
 
@@ -243,10 +253,9 @@ class Board {
       this.animatingLines = linesToClear;
       this.isPausedForAnimation = true;
 
-      // Add score immediately or after animation
       this.score += linesToClear.length * 100;
 
-      // Wait 250ms for the animation to play, then actually remove the lines
+      // This removes the lines after a short delay, which allows the animation to be visible to the user.
       setTimeout(() => {
         linesToClear.forEach((y) => {
           this.grid.splice(y, 1);
@@ -288,9 +297,11 @@ class Board {
       this.drawGridBlock(
         coord.x,
         coord.y + dropY,
-        this.element.color + this.theme.previewTransparency,
+        this.element.color,
+        this.theme.landingTransparency,
       );
     }
+
     ctx.closePath();
   }
 
@@ -303,19 +314,29 @@ class Board {
 
     // Draw the grid lines
     ctx.strokeStyle = this.theme.boardGrid;
-    ctx.lineWidth = 1;
 
-    // Vertical lines
     for (let x = 0; x <= width; x += cubeWidth) {
       ctx.beginPath();
+      // otherwise the border lines would look thinner than the inner grid lines
+      if (x === 0 || x + cubeWidth > width) {
+        ctx.lineWidth = 2;
+      } else {
+        ctx.lineWidth = 1;
+      }
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
       ctx.stroke();
     }
 
-    // Horizontal lines
     for (let y = 0; y <= height; y += cubeHeight) {
       ctx.beginPath();
+      // otherwise the border lines would look thinner than the inner grid lines
+      if (y === 0 || y + cubeHeight > height) {
+        ctx.lineWidth = 2;
+      } else {
+        ctx.lineWidth = 1;
+      }
+
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
@@ -334,12 +355,7 @@ class Board {
           this.drawGridBlock(
             x,
             y,
-            adjustBrightnessBy(
-              this.grid[y][x],
-              isDark(this.theme.boardBackground)
-                ? brightnessFactor
-                : -brightnessFactor,
-            ),
+            adjustBrightnessBy(this.grid[y][x], brightnessFactor),
           );
         } else {
           this.drawGridBlock(x, y, this.grid[y][x]);
@@ -349,7 +365,7 @@ class Board {
     ctx.closePath();
   }
 
-  drawGridBlock(x, y, color) {
+  drawGridBlock(x, y, color, alpha = 1.0) {
     this.drawBlock(
       ctx,
       x * cubeWidth,
@@ -357,23 +373,27 @@ class Board {
       cubeWidth,
       cubeHeight,
       color,
+      alpha,
     );
   }
 
-  drawBlock(context, drawX, drawY, cubeWidth, cubeHeight, color) {
+  drawBlock(context, drawX, drawY, cubeWidth, cubeHeight, color, alpha = 1.0) {
     // First draw the main block in the given color
+    color = colorWithAlpha(color, alpha);
     context.fillStyle = color;
     context.fillRect(drawX, drawY, cubeWidth, cubeHeight);
 
-    // Then the light shade on the top and left
     const shadowOffset = Math.floor(0.15 * cubeWidth);
+    const lightShade = "rgba(255, 255, 255, 0.2)";
+    const darkShade = "rgba(0, 0, 0, 0.3)";
 
-    context.fillStyle = this.theme.blockShadowTop;
+    // Then the light shade on the top and left
+    context.fillStyle = lightShade;
     context.fillRect(drawX, drawY, shadowOffset, cubeHeight);
     context.fillRect(drawX, drawY, shadowOffset, cubeHeight);
 
     // And a darker shadow on the bottom and right
-    context.fillStyle = this.theme.blockShadowBottom;
+    context.fillStyle = darkShade;
     context.fillRect(
       drawX,
       drawY + cubeHeight - shadowOffset,
@@ -465,7 +485,7 @@ class Element {
   }
 }
 
-let board = new Board(ColorTheme.DarkBlue);
+let board = new Board(ColorTheme.Neon);
 
 let lastdx = 0;
 let lastdy = 0;

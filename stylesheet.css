@@ -23,10 +23,9 @@ html {
     max-height: 100dvh;
     width: 100vw;
 
-    /* TODO: Hide overflow after layout is done? */
-    overflow: auto;
+    /* Hide scrollbar */
+    overflow: hidden;
     touch-action: none;
-    border: red dashed 0.1rem;
 }
 
 body {
@@ -151,10 +150,6 @@ canvas {
 }
 
 #preview {
-    /* Otherwise it might disappear sometimes */
-    min-width: 1vmin;
-    min-height: 1vmin;
-
     flex: 1 1 auto;
 }
 

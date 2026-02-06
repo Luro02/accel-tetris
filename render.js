@@ -571,8 +571,11 @@ if (DeviceOrientationEvent) {
         } else if (event.beta <= 30) {
           dty = 500;
         } else if (event.beta <= 40) {
+          board.score += 2; // reward for manually moving down
+
           dty = 300;
         } else {
+          board.score += 3; // reward for manually moving down
           dty = 100;
         }
       }
@@ -595,7 +598,12 @@ document.addEventListener("keydown", function (event) {
   }
 
   // Handle down arrow key
-  if (event.key === "ArrowDown") {
+  if (event.key === "ArrowUp") {
     board.dropDownElement();
+  }
+
+  if (event.key === "ArrowDown") {
+    board.score += 1; // reward for manually moving down
+    board.moveElement(0, 1);
   }
 });

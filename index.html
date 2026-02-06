@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accel Tetris</title>
+    <style>
+      /* TODO: Keep the padding/margin? */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      * {
+        /* Padding and borders should be in the element's box */
+        box-sizing: border-box;
+      }
+      html {
+        font-family: sans-serif;
+        min-height: 100dvh;
+        height: 100dvh; /* This is important! Took me days to figure out why things overflow off the screen */
+        max-height: 100dvh;
+        margin: 0;
+        overflow: auto; /* TODO: For some reason it overflows? */
+        touch-action: none;
+        border: red dashed 0.1rem;
+      }
+      body {
+        height: 100%;
+        width: 100%;
+
+        margin: 0;
+        padding: 0;
+
+        display: flex;
+        flex-flow: column nowrap;
+        align-items: stretch;
+        justify-content: stretch;
+        gap: 0.5rem;
+      }
+
+      #content {
+        min-height: 0;
+        min-width: 0;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+
+        flex: 1 1 auto;
+
+        display: flex;
+        flex-flow: row wrap;
+        align-items: flex-start;
+        align-content: flex-start;
+
+        gap: 0.5rem;
+      }
+      #info {
+        font-size: 1rem;
+        text-align: center;
+        flex: 0 0 auto;
+      }
+
+      canvas {
+        /* This works, but has an ugly border */
+        /*min-width: 0;
+        min-height: 0;
+        height: 100%;
+        width: auto;
+        max-height: 100%;
+        max-width: 100%;
+
+        flex: 1 1 0;
+        object-fit: contain;
+        */
+        /* Allow scaling below defined size */
+        min-width: 0;
+        min-height: 0;
+
+        /* It can scale up to the parent container size */
+        /* Scale to fit parent flex container */
+        max-height: 100%;
+        max-width: 100%;
+
+        /* The object-fit enforces the aspect ratio */
+        object-fit: contain;
+
+        background: rebeccapurple;
+      }
+
+      #board {
+        height: 100%;
+
+        flex: 0 0 auto;
+      }
+
+      #score-value {
+        font-size: 1.8rem;
+      }
+
+      #side-bar {
+        flex: 1 1 0;
+        display: flex;
+        flex-flow: row nowrap;
+        gap: 1rem;
+        align-content: stretch;
+        justify-content: flex-start;
+
+        width: 100%;
+        height: auto;
+      }
+
+      .side-item {
+        flex: 1 1 auto;
+        display: flex;
+
+        align-items: center;
+        justify-content: flex-end;
+        align-content: center;
+
+        width: 100%;
+        height: 100%;
+
+        flex-flow: column nowrap;
+      }
+
+      #preview {
+        min-height: 100px;
+        min-width: 100px;
+        object-position: top center;
+        flex: 1 1 auto;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The CSS styles resize the canvas to fit the screen, but the resolution is defined here -->
+    <div id="info">Tilt your device to play</div>
+    <div id="content">
+      <div id="side-bar">
+        <div class="side-item">
+          SCORE
+          <span id="score-value">0</span>
+        </div>
+        <div class="side-item">
+          NEXT
+          <canvas id="preview" width="500" height="500"></canvas>
+        </div>
+      </div>
+
+      <canvas id="board" width="500" height="1000"></canvas>
+    </div>
+  </body>
+  <script src="render.js" type="module"></script>
+</html>

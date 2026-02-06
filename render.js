@@ -1,4 +1,5 @@
 import { ColorTheme } from "./themes.js";
+import { adjustBrightnessBy, isDark } from "./utils.js";
 
 const gridWidth = 10;
 const gridHeight = 20;
@@ -12,6 +13,11 @@ const cubeWidth = canvas.width / gridWidth;
 const cubeHeight = canvas.height / gridHeight;
 const canvasWidth = canvas.width;
 const canvasHeight = canvas.height;
+
+// If this is false, the game will not start moving pieces down, useful for debugging and testing
+const isEnabled = true;
+
+const brightnessFactor = 0.3;
 
 // This goes through all themes, all pieces and their layouts to find the largest piece size.
 //
@@ -71,6 +77,9 @@ class Board {
     this._nextElement = null;
     this.level = 0;
     this.score = 0;
+
+    this.isPausedForAnimation = false;
+    this.animatingLines = [];
 
     // This will initialize the _nextElement
     this.nextElement();
@@ -223,35 +232,32 @@ class Board {
   }
 
   clearLines() {
-    let lines = 0;
-    // Now check if any rows are complete
+    let linesToClear = [];
     for (let y = 0; y < gridHeight; y++) {
-      let isComplete = true;
-
-      for (let x = 0; x < gridWidth; x++) {
-        if (this.grid[y][x] == null) {
-          isComplete = false;
-          break;
-        }
-      }
-
-      if (isComplete) {
-        lines += 1;
-        // Remove this row and move everything above it down
-        for (let ty = y; ty > 0; ty--) {
-          this.grid[ty] = [...this.grid[ty - 1]];
-        }
-
-        // Clear the top row
-        this.grid[0] = [...Array.apply(0, Array(gridWidth))];
+      if (this.grid[y].every((cell) => cell !== null)) {
+        linesToClear.push(y);
       }
     }
 
-    if (lines > 0) {
-      this.score += lines * 100;
+    if (linesToClear.length > 0) {
+      this.animatingLines = linesToClear;
+      this.isPausedForAnimation = true;
+
+      // Add score immediately or after animation
+      this.score += linesToClear.length * 100;
+
+      // Wait 250ms for the animation to play, then actually remove the lines
+      setTimeout(() => {
+        linesToClear.forEach((y) => {
+          this.grid.splice(y, 1);
+          this.grid.unshift(Array(gridWidth).fill(null));
+        });
+        this.animatingLines = [];
+        this.isPausedForAnimation = false;
+      }, 250);
     }
 
-    return lines;
+    return linesToClear.length;
   }
 
   render() {
@@ -323,7 +329,21 @@ class Board {
           continue;
         }
 
-        this.drawGridBlock(x, y, this.grid[y][x]);
+        // If the line is being cleared, it will be a brighter color
+        if (this.animatingLines.includes(y)) {
+          this.drawGridBlock(
+            x,
+            y,
+            adjustBrightnessBy(
+              this.grid[y][x],
+              isDark(this.theme.boardBackground)
+                ? brightnessFactor
+                : -brightnessFactor,
+            ),
+          );
+        } else {
+          this.drawGridBlock(x, y, this.grid[y][x]);
+        }
       }
     }
     ctx.closePath();
@@ -385,6 +405,10 @@ class Board {
 
   renderPreview() {
     let nextElement = this.nextElement();
+
+    // First clear the preview area
+    sctx.fillStyle = this.theme.sidebarBackground;
+    sctx.fillRect(0, 0, sideCanvas.width, sideCanvas.height);
 
     const previewWidth =
       (sideCanvas.width - 2 * previewPadding * cubeWidth) / largestElementSize;
@@ -469,8 +493,9 @@ function draw(timestamp) {
     moveY = dy;
   }
 
-  // TODO: uncomment
-  //board.moveElement(moveX, moveY);
+  if (isEnabled) {
+    board.moveElement(moveX, moveY);
+  }
   board.render();
   requestAnimationFrame(draw);
 }
@@ -488,8 +513,6 @@ if (DeviceOrientationEvent) {
       }
 
       // Use gamma to move the piece left or right
-      let previousDx = dx;
-
       if (Math.abs(event.gamma) < 15) {
         dx = 0;
         dtx = 1000;
